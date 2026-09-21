@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="インターバル">
+<meta name="theme-color" content="#D6461F">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>インターバル・タイマー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=M+PLUS+1p:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF2EE; --surface:#FFFFFF; --ink:#13233A; --muted:#5B6B7C; --line:#D3DCD6;
+  --work:#D6461F; --rest:#12775E; --prep:#F1B814; --primary:#13233A; --on-primary:#FFFFFF;
+  --danger:#B3261E;
+  --font:"M PLUS 1p","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+  --num:"Barlow Condensed","Arial Narrow","Helvetica Neue",sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1B22; --surface:#172833; --ink:#E8EFF2; --muted:#9BACB8; --line:#2A3D49;
+    --primary:#E8EFF2; --on-primary:#0F1B22; --danger:#FF8A80;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1B22; --surface:#172833; --ink:#E8EFF2; --muted:#9BACB8; --line:#2A3D49;
+  --primary:#E8EFF2; --on-primary:#0F1B22; --danger:#FF8A80;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);
+  -webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;touch-action:manipulation;cursor:pointer;border:0;background:none}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #2B7FFF;outline-offset:2px}
+.wrap{max-width:900px;margin:0 auto;padding:20px 20px 60px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 24px}
+.top h1{font-size:1.6rem;font-weight:800;margin:0;letter-spacing:.02em}
+.nav{display:flex;gap:8px}
+.pill{padding:12px 18px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-weight:700;font-size:1rem}
+.back{padding:12px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--line);font-weight:700}
+.muted{color:var(--muted)}
+h2{font-size:1.25rem;margin:28px 0 12px}
+
+/* menu list */
+.menus{display:grid;gap:16px}
+.menu{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:20px 20px 20px 24px;
+  display:grid;grid-template-columns:1fr auto;gap:8px 16px;align-items:center;position:relative;overflow:hidden}
+.menu::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:var(--work)}
+.menu .name{font-size:1.35rem;font-weight:800}
+.menu .spec{font-family:var(--num);font-size:1.5rem;font-weight:600;letter-spacing:.01em}
+.menu .spec small{font-family:var(--font);font-size:.85rem;font-weight:500;color:var(--muted);margin-left:6px}
+.menu .last{font-size:.9rem;color:var(--muted)}
+.menu .acts{grid-row:1/4;grid-column:2;display:flex;flex-direction:column;gap:10px;align-items:stretch}
+.start{background:var(--work);color:#fff;font-weight:800;font-size:1.3rem;padding:18px 30px;border-radius:16px;min-width:150px}
+.ghost{background:transparent;border:1px solid var(--line);padding:10px 16px;border-radius:12px;font-weight:700}
+.add{width:100%;padding:18px;border:2px dashed var(--line);border-radius:20px;font-weight:700;font-size:1.05rem;color:var(--muted)}
+
+/* forms */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:20px}
+.field{margin-bottom:22px}
+.field label{display:block;font-weight:700;margin-bottom:10px}
+.text{width:100%;font:inherit;font-size:1.15rem;padding:14px 16px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+textarea.text{min-height:90px;resize:vertical}
+.stepper{display:flex;align-items:center;gap:12px}
+.stepper button{width:72px;height:72px;border-radius:18px;background:var(--bg);border:1px solid var(--line);font-size:1.8rem;font-weight:800}
+.stepper .val{flex:1;text-align:center;font-family:var(--num);font-weight:800;font-size:3rem;line-height:1}
+.stepper .val small{font-family:var(--font);font-size:1rem;font-weight:700;margin-left:4px}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+.primary{background:var(--primary);color:var(--on-primary);font-weight:800;padding:16px 26px;border-radius:14px;font-size:1.1rem}
+.danger{color:var(--danger);border:1px solid var(--danger);padding:14px 20px;border-radius:14px;font-weight:700}
+.danger.armed{background:var(--danger);color:#fff}
+.total{margin:6px 0 18px;color:var(--muted)}
+
+/* settings */
+.set-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.set-row:last-child{border-bottom:0}
+.set-row .lbl{font-weight:700}
+.set-row .sub{font-size:.85rem;color:var(--muted);margin-top:2px}
+.switch{min-width:88px;padding:12px 16px;border-radius:999px;font-weight:800;border:1px solid var(--line);background:var(--bg)}
+.switch[aria-pressed="true"]{background:var(--rest);border-color:var(--rest);color:#fff}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:12px 18px;border-radius:999px;border:1px solid var(--line);background:var(--bg);font-weight:700}
+.chip[aria-pressed="true"]{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+.filebtn{position:relative;overflow:hidden;display:inline-flex;align-items:center;padding:16px 22px;font-size:1.05rem}
+.filebtn input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.tips{font-size:.95rem;line-height:1.75;color:var(--muted);margin:0;padding-left:1.2em}
+
+/* history */
+.chart-box{overflow-x:auto}
+.chart-box svg{display:block;width:100%;min-width:420px;height:auto}
+.recs{display:grid;gap:10px;margin-top:16px}
+.rec{background:var(--surface);border:1px solid var(--line);border-radius:16px}
+.rec-head{width:100%;display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:16px 18px;text-align:left}
+.rec-date{font-family:var(--num);font-weight:800;font-size:1.4rem;min-width:88px}
+.rec-name{font-weight:700}
+.rec-sum{font-family:var(--num);font-weight:800;font-size:1.6rem;text-align:right}
+.rec-sum small{font-family:var(--font);font-size:.8rem;font-weight:700;color:var(--muted);margin-left:2px}
+.best{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:6px;background:var(--prep);color:#13233A;font-size:.75rem;font-weight:800}
+.rec-body{padding:0 18px 18px}
+.counts{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}
+.counts span{min-width:44px;text-align:center;padding:6px 8px;border-radius:8px;background:var(--bg);font-family:var(--num);font-weight:800;font-size:1.2rem}
+.memo{margin:0 0 12px;white-space:pre-wrap}
+.empty{padding:40px 20px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:20px}
+
+/* result */
+.score{display:flex;align-items:flex-end;gap:28px;flex-wrap:wrap;margin:8px 0 6px}
+.score .big{font-family:var(--num);font-weight:800;font-size:clamp(4.5rem,14vw,7.5rem);line-height:.9}
+.score .big small{font-family:var(--font);font-size:1.3rem;margin-left:6px}
+.score .avg{font-size:1.1rem;font-weight:700;padding-bottom:10px}
+.diff{font-weight:800;font-size:1.1rem;margin-bottom:20px}
+.diff.up{color:var(--rest)}
+.set-edit{display:grid;grid-template-columns:auto 60px 64px 60px 1fr;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.set-edit .sn{font-weight:700;min-width:70px}
+.set-edit button{height:56px;border-radius:14px;background:var(--bg);border:1px solid var(--line);font-size:1.5rem;font-weight:800}
+.set-edit .n{text-align:center;font-family:var(--num);font-weight:800;font-size:2.2rem}
+.cmp{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end;font-weight:700}
+.badge{padding:5px 10px;border-radius:8px;font-weight:800;font-size:.95rem;background:var(--bg)}
+.badge.up{background:var(--rest);color:#fff}
+.badge.tie{background:var(--prep);color:#13233A}
+.badge.down{color:var(--muted)}
+.tg{color:var(--muted)}
+.tg.ok{color:var(--rest)}
+.set-head{display:grid;grid-template-columns:auto 1fr auto;gap:10px;font-size:.85rem;color:var(--muted);font-weight:700;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.summary{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 20px}
+.summary span{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-weight:700}
+
+/* timer */
+.timer{position:fixed;top:0;left:0;right:0;bottom:0;z-index:10;display:flex;flex-direction:column;color:#fff;
+  padding:calc(env(safe-area-inset-top,0px) + 14px) 20px calc(env(safe-area-inset-bottom,0px) + 16px);background:var(--work)}
+.timer.work{background:var(--work)}
+.timer.rest,.timer.final{background:var(--rest)}
+.timer.prep{background:var(--prep);color:#13233A}
+.tbar{display:flex;align-items:center;gap:14px}
+.tname{font-weight:800;font-size:1.15rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tset{font-weight:700;font-size:1.1rem}
+.tset b{font-family:var(--num);font-size:2.2rem;font-weight:800;margin:0 2px}
+.tbtn{padding:14px 20px;border-radius:14px;background:rgba(255,255,255,.2);font-weight:800;font-size:1.05rem}
+.prep .tbtn{background:rgba(19,35,58,.12)}
+.tmain{flex:1;display:grid;grid-template-columns:1fr;gap:20px;min-height:0;padding-top:10px}
+.clock{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0;text-align:center}
+.plabel{font-size:clamp(1.6rem,4.5vw,2.6rem);font-weight:800;letter-spacing:.08em}
+.secs{font-family:var(--num);font-weight:800;line-height:.82;font-size:min(46vh,48vw);font-variant-numeric:tabular-nums}
+.has-counter .secs{font-size:min(34vh,30vw)}
+.pbar{width:min(90%,720px);height:14px;border-radius:7px;background:rgba(255,255,255,.28);overflow:hidden;margin-top:14px}
+.prep .pbar{background:rgba(19,35,58,.15)}
+.pbar i{display:block;height:100%;width:0;background:currentColor;border-radius:7px}
+.caption{min-height:3.4em;margin-top:18px;font-size:clamp(1.3rem,3.4vw,2rem);font-weight:800;line-height:1.35}
+.caption .who{display:block;font-size:.55em;font-weight:700;opacity:.85}
+.counter{background:rgba(255,255,255,.14);border-radius:28px;padding:20px;display:flex;flex-direction:column;align-items:stretch;gap:12px;min-height:0}
+.ctitle{text-align:center;font-weight:800;font-size:1.3rem}
+.cnum{text-align:center;font-family:var(--num);font-weight:800;font-size:min(20vh,22vw);line-height:.9}
+.cnum small{font-family:var(--font);font-size:.18em;margin-left:6px}
+.plus{flex:1;min-height:110px;border-radius:24px;background:#fff;color:var(--rest);font-size:clamp(2.2rem,6vw,3.4rem);font-weight:800}
+.plus:active{transform:scale(.98)}
+.minus{min-height:64px;border-radius:18px;border:2px solid rgba(255,255,255,.7);font-size:1.4rem;font-weight:800}
+.chint{text-align:center;font-size:.9rem;opacity:.85}
+.goal{margin-top:4px;font-size:clamp(1.3rem,3.6vw,2.2rem);font-weight:800}
+.goal b{font-family:var(--num);font-size:1.5em;margin:0 4px}
+.cgoal{text-align:center;font-weight:800;font-size:1.2rem;padding:10px;border-radius:14px;background:rgba(255,255,255,.16)}
+.cgoal.ok{background:#fff;color:var(--rest)}
+.go-result{min-height:72px;border-radius:18px;background:#13233A;color:#fff;font-size:1.4rem;font-weight:800}
+@media (orientation:landscape){
+  .has-counter .tmain{grid-template-columns:1.15fr 1fr}
+}
+@media (orientation:portrait){
+  .has-counter .tmain{grid-template-rows:auto 1fr}
+}
+.veil{position:absolute;inset:0;background:rgba(10,20,30,.72);display:flex;align-items:center;justify-content:center;padding:24px;color:#fff;z-index:2}
+.dialog{background:var(--surface);color:var(--ink);border-radius:24px;padding:28px;max-width:460px;width:100%;display:grid;gap:12px;text-align:center}
+.dialog h3{margin:0 0 6px;font-size:1.4rem}
+.dialog button{padding:18px;border-radius:16px;font-weight:800;font-size:1.1rem;border:1px solid var(--line);background:var(--bg)}
+.dialog .primary{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+.big-resume{padding:28px 60px;border-radius:24px;background:#fff;color:#13233A;font-size:2rem;font-weight:800}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);transform:translateX(-50%);
+  background:var(--primary);color:var(--on-primary);padding:14px 22px;border-radius:999px;font-weight:700;z-index:50;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+@media (max-width:560px){
+  .menu{grid-template-columns:1fr}
+  .menu .acts{grid-row:auto;grid-column:auto;flex-direction:row}
+  .start{flex:1}
+  .set-edit{grid-template-columns:auto 52px 52px 52px}
+  .cmp{grid-column:1/-1;justify-content:flex-start}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+(function(){
+"use strict";
+var KEY = "intervalTimer.v1";
+var app = document.getElementById("app");
+
+/* ---------- data ---------- */
+function defaultStore(){
+  return {
+    v:1,
+    menus:[
+      {id:"m-turn", name:"ターンサーキット", work:30, rest:30, sets:8, updatedAt:0},
+      {id:"m-dribble", name:"ドリブル（軽い日）", work:30, rest:30, sets:6, updatedAt:0}
+    ],
+    records:[], deleted:[],
+    settings:{sister:true, coach:true, cheer:true, countVoice:true, beep:true, prep:5}
+  };
+}
+function loadLocal(){
+  try{ var s = localStorage.getItem(KEY); if(!s) return null; return normalize(JSON.parse(s)); }catch(e){ return null; }
+}
+function normalize(s){
+  var d = defaultStore();
+  if(!s || typeof s !== "object") return d;
+  return {
+    v:1,
+    menus: Array.isArray(s.menus) ? s.menus.filter(validMenu) : d.menus,
+    records: Array.isArray(s.records) ? s.records.filter(validRec) : [],
+    deleted: Array.isArray(s.deleted) ? s.deleted.filter(function(x){return typeof x==="string";}) : [],
+    settings: Object.assign({}, d.settings, (s.settings && typeof s.settings==="object") ? s.settings : {})
+  };
+}
+function validMenu(m){ return m && typeof m.id==="string" && typeof m.name==="string" && m.work>0 && m.rest>0 && m.sets>0; }
+function validRec(r){ return r && typeof r.id==="string" && Array.isArray(r.counts) && typeof r.date==="string"; }
+var store = loadLocal() || defaultStore();
+
+function merge(local, remoteRaw){
+  var r = normalize(remoteRaw);
+  var del = {};
+  local.deleted.concat(r.deleted).forEach(function(id){ del[id]=true; });
+  var menus = {};
+  local.menus.concat(r.menus).forEach(function(m){
+    if(del[m.id]) return;
+    if(!menus[m.id] || (m.updatedAt||0) > (menus[m.id].updatedAt||0)) menus[m.id] = m;
+  });
+  var recs = {};
+  local.records.concat(r.records).forEach(function(x){ if(!del[x.id]) recs[x.id]=x; });
+  var recList = Object.keys(recs).map(function(k){return recs[k];}).sort(function(a,b){return a.date<b.date?-1:1;});
+  return {v:1, menus:Object.keys(menus).map(function(k){return menus[k];}), records:recList, deleted:Object.keys(del), settings:local.settings};
+}
+
+var remote = {ref:null, writing:false, dirty:false, timer:null};
+function persist(){
+  try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){}
+  scheduleRemote();
+}
+function scheduleRemote(){
+  if(!remote.ref) return;
+  remote.dirty = true;
+  clearTimeout(remote.timer);
+  remote.timer = setTimeout(flushRemote, 800);
+}
+function flushRemote(){
+  if(!remote.ref || remote.writing || !remote.dirty) return;
+  remote.writing = true; remote.dirty = false;
+  remote.ref.set(JSON.parse(JSON.stringify(store))).then(function(){
+    remote.writing = false; if(remote.dirty) scheduleRemote();
+  }, function(e){
+    remote.writing = false;
+    var code = e && e.code;
+    if(code === "unavailable"){ remote.dirty = true; setTimeout(flushRemote, 1500 + Math.random()*1500); }
+    else { remote.ref = null; }
+  });
+}
+function initRemote(){
+  if(!window.claude || typeof window.claude.use !== "function") return;
+  Promise.all([window.claude.use("db"), window.claude.use("user")]).then(function(res){
+    var db = res[0], user = res[1];
+    if(!db || !user) return null;
+    return user.id().then(function(id){
+      if(!id) return null;
+      var ref = db.doc("data/users/" + id + "/state");
+      return ref.get().then(function(snap){
+        remote.ref = ref;
+        if(snap.exists){
+          store = merge(store, snap.data());
+          try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){}
+          if(view !== "timer" && view !== "final") render();
+        }
+        scheduleRemote();
+      });
+    });
+  }).catch(function(){ remote.ref = null; });
+}
+
+/* ---------- helpers ---------- */
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function fmtDate(iso){ var d=new Date(iso); return (d.getMonth()+1)+"/"+d.getDate()+"("+"日月火水木金土"[d.getDay()]+")"; }
+function fmtSecs(s){ if(s<60) return String(s); var m=Math.floor(s/60), r=s%60; return m+":"+(r<10?"0":"")+r; }
+function sum(a){ return a.reduce(function(x,y){return x+(y||0);},0); }
+function avg(a){ return a.length ? Math.round(sum(a)/a.length*10)/10 : 0; }
+function totalMin(m){ return Math.round((m.work*m.sets + m.rest*(m.sets-1))/60*10)/10; }
+function menuById(id){ return store.menus.find(function(m){return m.id===id;}); }
+function lastRecord(menuId, before){
+  var list = store.records.filter(function(r){ return r.menuId===menuId && (!before || r.date < before); });
+  return list.length ? list[list.length-1] : null;
+}
+function comparable(menuId, work, rest, before){
+  return store.records.filter(function(r){ return r.menuId===menuId && r.work===work && r.rest===rest && (!before || r.date < before); });
+}
+function maxOf(a){ return a.length ? Math.max.apply(null, a) : null; }
+function computeTargets(m){
+  var recs = comparable(m.id, m.work, m.rest).slice(-3), t = [];
+  for(var i=0;i<m.sets;i++){
+    t.push(maxOf(recs.map(function(r){return r.counts[i];}).filter(function(v){return typeof v==="number";})));
+  }
+  return t;
+}
+function pastBests(d){
+  var recs = comparable(d.menuId, d.work, d.rest, d.date);
+  return {
+    per: d.counts.map(function(_, i){ return maxOf(recs.map(function(r){return r.counts[i];}).filter(function(v){return typeof v==="number";})); }),
+    total: maxOf(recs.map(function(r){return sum(r.counts);}))
+  };
+}
+function goalOk(n, t){ return t!=null && n>=t; }
+function goalStatus(n, t){
+  if(t==null) return "初回は目標なし";
+  return n>=t ? "目標 "+t+"周　達成！" : "目標 "+t+"周まで　あと"+(t-n)+"周";
+}
+var toastTimer;
+function toast(msg){
+  var t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer=setTimeout(function(){t.classList.remove("show");},2200);
+}
+
+/* ---------- sound & voice ---------- */
+var actx = null;
+function unlockAudio(){
+  try{
+    if(!actx){ var C = window.AudioContext || window.webkitAudioContext; if(C) actx = new C(); }
+    if(actx && actx.state === "suspended") actx.resume();
+  }catch(e){}
+}
+function beep(freq, dur, vol){
+  if(!store.settings.beep || !actx) return;
+  try{
+    var t=actx.currentTime, o=actx.createOscillator(), g=actx.createGain();
+    o.type="sine"; o.frequency.value=freq||880;
+    g.gain.setValueAtTime(vol||0.3,t); g.gain.exponentialRampToValueAtTime(0.001,t+(dur||0.12));
+    o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t+(dur||0.12)+0.03);
+  }catch(e){}
+}
+var voices = [];
+function loadVoices(){ try{ voices = window.speechSynthesis.getVoices() || []; }catch(e){ voices=[]; } }
+if("speechSynthesis" in window){ loadVoices(); try{ window.speechSynthesis.onvoiceschanged = loadVoices; }catch(e){} }
+function voiceFor(kind){
+  var ja = voices.filter(function(v){ return /^ja/i.test(v.lang||""); });
+  if(!ja.length) return null;
+  var fem = ja.find(function(v){ return /kyoko|o-?ren|female|女性|nanami|haruka|ayumi|sayaka/i.test(v.name); });
+  var mal = ja.find(function(v){ return /otoya|hattori|ichiro|keita|男性|\bmale/i.test(v.name) && !/female/i.test(v.name); });
+  if(kind==="coach") return mal || ja[0];
+  return fem || ja[0];
+}
+var STYLE = { sister:{pitch:1.3, rate:1.0}, coach:{pitch:0.55, rate:1.2} };
+function speak(text, kind, interrupt){
+  if(!("speechSynthesis" in window)) return;
+  try{
+    if(interrupt) window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = "ja-JP";
+    var v = voiceFor(kind); if(v) u.voice = v;
+    var s = STYLE[kind] || STYLE.sister;
+    u.pitch = s.pitch; u.rate = s.rate; u.volume = 1;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+function stopSpeech(){ try{ window.speechSynthesis.cancel(); }catch(e){} }
+
+var NAMES = {sister:"お姉さん", coach:"鬼コーチ"};
+var CHEERS = {
+  sister:["いいよ、その調子！","足、ちゃんと動いてるよ！","がんばれ、もう少し！","ターン、きれいだね！","苦しいときこそ、腕を振ろう！","ここでがんばれるの、かっこいいよ！","呼吸、止めないでね！","昨日の自分に勝とう！","あと少し、いっしょにがんばろう！"],
+  coach:["止まるな！足を動かせ！","まだいける！もっと速く！","試合の最後はここで決まるぞ！","腰を落とせ！ターンで負けるな！","ばててる暇はないぞ！","もう1周！限界を超えろ！","腕を振れ！顔を上げろ！","ここで踏ん張れ！","相手は待ってくれないぞ！"]
+};
+var LINES = {
+  prep:{sister:"準備してね。もうすぐ始まるよ。", coach:"準備しろ！すぐ始めるぞ！"},
+  start:{sister:"スタート！", coach:"いけ！"},
+  last:{sister:"ラスト1本！がんばって！", coach:"ラスト1本！全部出しきれ！"},
+  rest:{sister:["よくがんばったね。何周できたか入力してね。","ナイスファイト！周回数を入れて、深呼吸しよう。"], coach:["休憩だ！周回数を入力して、呼吸を整えろ！","よし！数を入れろ！次もいくぞ！"]},
+  nextLast:{sister:"次でラストだよ！", coach:"次がラストだ！"},
+  finish:{sister:"終了！本当によくがんばったね。最後のセットの周回数を入力してね。", coach:"終了！よくやった！最後のセットの周回数を入力しろ！"},
+  ten:{sister:"残り10秒！", coach:"残り10秒！"},
+  firstGoal:{sister:"準備してね。最初の目標は、{n}周だよ。", coach:"準備しろ！最初の目標は{n}周だ！"},
+  nextGoal:{sister:"次の目標は、{n}周だよ！", coach:"次の目標は{n}周だ！"}
+};
+var NUM = {1:"いち",2:"に",3:"さん",4:"よん",5:"ご"};
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+function enabledChars(){
+  var c=[]; if(store.settings.sister) c.push("sister"); if(store.settings.coach) c.push("coach");
+  return c.length ? c : ["sister"];
+}
+function pickChar(){ return pick(enabledChars()); }
+
+/* ---------- wake lock ---------- */
+var wakeLock = null;
+function keepAwake(){
+  try{
+    if("wakeLock" in navigator){
+      navigator.wakeLock.request("screen").then(function(w){ wakeLock=w; }, function(){ wakeLock=null; });
+    }
+  }catch(e){ wakeLock=null; }
+}
+function releaseAwake(){ try{ if(wakeLock) wakeLock.release(); }catch(e){} wakeLock=null; }
+document.addEventListener("visibilitychange", function(){
+  if(document.visibilityState==="visible" && run && !run.paused && view==="timer") keepAwake();
+});
+
+/* ---------- state ---------- */
+var view = "home";
+var editDraft = null, resultDraft = null, histFilter = null, openRec = {}, armed = null;
+var run = null, ticker = null;
+
+/* ---------- timer engine ---------- */
+function startRun(menuId){
+  var m = menuById(menuId); if(!m) return;
+  unlockAudio();
+  var phases = [];
+  var prep = store.settings.prep|0;
+  if(prep>0) phases.push({type:"prep", dur:prep, set:0});
+  for(var i=0;i<m.sets;i++){
+    phases.push({type:"work", dur:m.work, set:i});
+    if(i<m.sets-1) phases.push({type:"rest", dur:m.rest, set:i});
+  }
+  var chars=[]; for(var j=0;j<m.sets;j++) chars.push(pickChar());
+  run = {menu:Object.assign({},m), phases:phases, idx:-1, counts:new Array(m.sets).fill(null), chars:chars,
+         targets:computeTargets(m), paused:false, modal:false, lastRem:null, lastCheer:null, startedAt:new Date().toISOString()};
+  view = "timer";
+  enterPhase(0, Date.now());
+  keepAwake();
+  clearInterval(ticker); ticker = setInterval(tick, 100);
+}
+function phase(){ return run.phases[run.idx]; }
+function enterPhase(i, startAt){
+  run.idx = i;
+  if(i >= run.phases.length){ finishWork(); return; }
+  var p = phase();
+  run.phaseEnd = startAt + p.dur*1000;
+  run.lastRem = null;
+  var c = run.chars[p.set];
+  if(p.type==="prep"){
+    var t0 = run.targets[0];
+    speak(t0!=null ? LINES.firstGoal[c].replace("{n}", t0) : LINES.prep[c], c, true);
+  } else if(p.type==="work"){
+    beep(1320,0.35,0.35);
+    var isLast = p.set === run.menu.sets-1;
+    speak(isLast ? LINES.last[c] : LINES.start[c], c, true);
+  } else if(p.type==="rest"){
+    beep(660,0.45,0.35);
+    if(run.counts[p.set]==null) run.counts[p.set] = p.set>0 ? (run.counts[p.set-1]||0) : 0;
+    speak(pick(LINES.rest[c]), c, true);
+  }
+  renderTimer();
+}
+function tick(){
+  if(!run || run.paused || view!=="timer") return;
+  var now = Date.now(), guard = 0;
+  while(run && view==="timer" && now >= run.phaseEnd && guard++ < 200){
+    enterPhase(run.idx+1, run.phaseEnd);
+  }
+  if(!run || view!=="timer") return;
+  var p = phase();
+  var remMs = Math.max(0, run.phaseEnd - now);
+  var rem = Math.ceil(remMs/1000);
+  if(rem !== run.lastRem){ run.lastRem = rem; onSecond(p, rem); }
+  var secs = document.getElementById("secs"); if(secs) secs.textContent = fmtSecs(rem);
+  var fill = document.getElementById("pfill"); if(fill) fill.style.width = (100 - remMs/(p.dur*10)) + "%";
+}
+function onSecond(p, rem){
+  if(rem<=0) return;
+  var s = store.settings;
+  if(p.type==="prep"){
+    if(rem<=3){ beep(880,0.12); if(s.countVoice) speak(NUM[rem], run.chars[0], true); }
+  } else if(p.type==="work"){
+    var c = run.chars[p.set], e = p.dur - rem;
+    if(rem<=5 && p.dur>=8){ beep(880,0.1); if(s.countVoice) speak(NUM[rem], c, true); }
+    else if(rem===10 && p.dur>=20){ if(s.countVoice) speak(LINES.ten[c], c, true); }
+    else if(s.cheer && e>0 && e%8===0 && rem>6 && (p.dur<20 || Math.abs(rem-10)>2)){
+      var who = pickChar(), text;
+      do { text = pick(CHEERS[who]); } while(text===run.lastCheer && CHEERS[who].length>1);
+      run.lastCheer = text;
+      speak(text, who, false);
+      showCaption(who, text);
+    }
+  } else if(p.type==="rest"){
+    var nc = run.chars[p.set+1];
+    if(rem<=3){ beep(880,0.12); if(s.countVoice) speak(NUM[rem], nc, true); }
+    else if(rem===8 && p.dur>=12){
+      var nt = run.targets[p.set+1], isNL = p.set+1===run.menu.sets-1;
+      var txt = (isNL ? LINES.nextLast[nc] : "") + (nt!=null ? LINES.nextGoal[nc].replace("{n}", nt) : "");
+      if(txt){ speak(txt, nc, true); showCaption(nc, txt); }
+    }
+  }
+}
+var capTimer;
+function showCaption(who, text){
+  var el = document.getElementById("caption"); if(!el) return;
+  el.innerHTML = '<span class="who">'+esc(NAMES[who])+'</span>'+esc(text);
+  clearTimeout(capTimer); capTimer = setTimeout(function(){ var e2=document.getElementById("caption"); if(e2) e2.innerHTML=""; }, 3800);
+}
+function finishWork(){
+  clearInterval(ticker);
+  var last = run.menu.sets-1;
+  if(run.counts[last]==null) run.counts[last] = last>0 ? (run.counts[last-1]||0) : 0;
+  beep(1320,0.2); setTimeout(function(){beep(1760,0.4);},220);
+  var c = run.chars[last];
+  speak(LINES.finish[c], c, true);
+  view = "final";
+  render();
+}
+function pauseRun(){
+  if(!run || run.paused) return;
+  run.paused = true; run.remainMs = Math.max(0, run.phaseEnd - Date.now()); stopSpeech();
+}
+function resumeRun(){
+  if(!run || !run.paused) return;
+  unlockAudio();
+  run.paused = false; run.phaseEnd = Date.now() + run.remainMs; run.lastRem = null;
+}
+function endRun(){
+  clearInterval(ticker); releaseAwake(); stopSpeech();
+  var r = run; run = null; return r;
+}
+function toResult(r, counts){
+  resultDraft = {menuId:r.menu.id, menuName:r.menu.name, work:r.menu.work, rest:r.menu.rest,
+                 counts:counts, targets:r.targets.slice(0, counts.length), memo:"", date:new Date().toISOString()};
+  view = "result"; render();
+}
+
+/* ---------- rendering ---------- */
+function render(){
+  if(view==="timer"){ renderTimer(); return; }
+  if(view==="final"){ renderFinal(); return; }
+  var html = "";
+  if(view==="home") html = homeView();
+  else if(view==="edit") html = editView();
+  else if(view==="history") html = historyView();
+  else if(view==="settings") html = settingsView();
+  else if(view==="result") html = resultView();
+  app.innerHTML = html;
+  window.scrollTo(0,0);
+}
+
+function homeView(){
+  var cards = store.menus.map(function(m){
+    var last = lastRecord(m.id);
+    return '<div class="menu">'+
+      '<div class="name">'+esc(m.name)+'</div>'+
+      '<div class="spec">'+m.work+'秒 / '+m.rest+'秒 × '+m.sets+'<small>運動 / 休憩 × セット・約'+totalMin(m)+'分</small></div>'+
+      '<div class="last">'+(last ? '前回 '+fmtDate(last.date)+'　合計 '+sum(last.counts)+'周'+(function(){ var b=maxOf(comparable(m.id,m.work,m.rest).map(function(r){return sum(r.counts);})); return b==null?'':'　／　最高 '+b+'周'; })() : 'まだ記録がありません')+'</div>'+
+      '<div class="acts"><button class="start" data-a="start" data-id="'+esc(m.id)+'">スタート</button>'+
+      '<button class="ghost" data-a="edit" data-id="'+esc(m.id)+'">編集</button></div>'+
+    '</div>';
+  }).join("");
+  return '<div class="wrap"><header class="top"><h1>インターバル・タイマー</h1>'+
+    '<nav class="nav"><button class="pill" data-a="go" data-v="history">記録</button><button class="pill" data-a="go" data-v="settings">設定</button></nav></header>'+
+    '<div class="menus">'+cards+'<button class="add" data-a="new">＋ メニューを追加</button></div></div>';
+}
+
+function stepper(field, val, unit, step){
+  return '<div class="stepper"><button data-a="step" data-f="'+field+'" data-d="-'+step+'" aria-label="減らす">−</button>'+
+    '<div class="val">'+val+'<small>'+unit+'</small></div>'+
+    '<button data-a="step" data-f="'+field+'" data-d="'+step+'" aria-label="増やす">＋</button></div>';
+}
+function editView(){
+  var d = editDraft;
+  var del = d.id ? '<button class="danger'+(armed==="menu"?" armed":"")+'" data-a="delMenu">'+(armed==="menu"?"もう一度押すと削除":"このメニューを削除")+'</button>' : '';
+  return '<div class="wrap"><header class="top"><button class="back" data-a="go" data-v="home">戻る</button><h1>'+(d.id?"メニューを編集":"メニューを追加")+'</h1><span></span></header>'+
+    '<div class="card">'+
+    '<div class="field"><label for="mname">メニュー名</label><input id="mname" class="text" maxlength="24" value="'+esc(d.name)+'" placeholder="例：ターンサーキット" data-in="name"></div>'+
+    '<div class="field"><label>運動時間</label>'+stepper("work", d.work, "秒", 5)+'</div>'+
+    '<div class="field"><label>休憩時間</label>'+stepper("rest", d.rest, "秒", 5)+'</div>'+
+    '<div class="field"><label>セット数</label>'+stepper("sets", d.sets, "回", 1)+'</div>'+
+    '<p class="total">合計 約'+totalMin(d)+'分（準備時間をのぞく）</p>'+
+    '<div class="row"><button class="primary" data-a="saveMenu">保存する</button>'+del+'</div>'+
+    '</div></div>';
+}
+
+function chartSVG(recs){
+  if(recs.length<2) return '<p class="muted">同じメニューを2回以上記録すると、合計周回数のグラフが表示されます。</p>';
+  var pts = recs.slice(-20), t = pts.map(function(r){return sum(r.counts);});
+  var W=640,H=230,pl=44,pr=20,pt=20,pb=36, n=pts.length;
+  var mn=Math.min.apply(null,t), mx=Math.max.apply(null,t);
+  if(mn===mx){ mn-=2; mx+=2; } else { var pad=Math.ceil((mx-mn)*0.15); mn=Math.max(0,mn-pad); mx+=pad; }
+  function x(i){ return pl + i*(W-pl-pr)/(n-1); }
+  function y(v){ return pt + (H-pt-pb)*(1-(v-mn)/(mx-mn)); }
+  var grid = [mn, Math.round((mn+mx)/2), mx].map(function(v){
+    return '<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)" stroke-width="1"/>'+
+      '<text x="'+(pl-8)+'" y="'+(y(v)+5)+'" text-anchor="end" font-size="14" fill="var(--muted)">'+v+'</text>';
+  }).join("");
+  var line = pts.map(function(r,i){ return x(i)+","+y(t[i]); }).join(" ");
+  var dots = pts.map(function(r,i){ return '<circle cx="'+x(i)+'" cy="'+y(t[i])+'" r="5" fill="var(--rest)"/>'; }).join("");
+  var labels = '<text x="'+x(0)+'" y="'+(H-10)+'" font-size="14" fill="var(--muted)">'+fmtDate(pts[0].date)+'</text>'+
+    '<text x="'+x(n-1)+'" y="'+(H-10)+'" font-size="14" text-anchor="end" fill="var(--muted)">'+fmtDate(pts[n-1].date)+'</text>';
+  return '<div class="chart-box"><svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="合計周回数の推移">'+grid+
+    '<polyline points="'+line+'" fill="none" stroke="var(--rest)" stroke-width="3" stroke-linejoin="round"/>'+dots+labels+'</svg></div>';
+}
+function historyView(){
+  var recs = store.records;
+  var head = '<div class="wrap"><header class="top"><button class="back" data-a="go" data-v="home">戻る</button><h1>記録</h1><span></span></header>';
+  if(!recs.length) return head + '<div class="empty">まだ記録がありません。<br>トレーニングを終えて「記録を保存」を押すと、ここに並びます。</div></div>';
+  var menus = [], seen = {};
+  recs.slice().reverse().forEach(function(r){ if(!seen[r.menuId]){ seen[r.menuId]=1; menus.push({id:r.menuId, name:(menuById(r.menuId)||{}).name || r.menuName}); } });
+  if(!histFilter || (histFilter!=="all" && !seen[histFilter])) histFilter = menus[0].id;
+  var chips = '<div class="chips"><button class="chip" data-a="filter" data-m="all" aria-pressed="'+(histFilter==="all")+'">すべて</button>'+
+    menus.map(function(m){ return '<button class="chip" data-a="filter" data-m="'+esc(m.id)+'" aria-pressed="'+(histFilter===m.id)+'">'+esc(m.name)+'</button>'; }).join("")+'</div>';
+  var list = histFilter==="all" ? recs : recs.filter(function(r){return r.menuId===histFilter;});
+  var chart = histFilter==="all" ? '<p class="muted">メニューを選ぶと、合計周回数のグラフが表示されます。</p>' : chartSVG(list);
+  var best = {};
+  recs.forEach(function(r){ var s=sum(r.counts); if(best[r.menuId]==null || s>best[r.menuId]) best[r.menuId]=s; });
+  var rows = list.slice().reverse().map(function(r){
+    var s = sum(r.counts), open = openRec[r.id];
+    var isBest = s>0 && s===best[r.menuId] && recs.filter(function(x){return x.menuId===r.menuId;}).length>1;
+    var body = open ? '<div class="rec-body"><div class="muted">'+r.work+'秒 / '+r.rest+'秒 × '+r.counts.length+'セット　平均 '+avg(r.counts)+'周</div>'+
+      '<div class="counts">'+r.counts.map(function(c){return '<span>'+(c||0)+'</span>';}).join("")+'</div>'+
+      (r.memo ? '<p class="memo">'+esc(r.memo)+'</p>' : '')+
+      '<button class="danger'+(armed===r.id?" armed":"")+'" data-a="delRec" data-id="'+esc(r.id)+'">'+(armed===r.id?"もう一度押すと削除":"この記録を削除")+'</button></div>' : '';
+    return '<div class="rec"><button class="rec-head" data-a="toggleRec" data-id="'+esc(r.id)+'" aria-expanded="'+(!!open)+'">'+
+      '<span class="rec-date">'+fmtDate(r.date)+'</span>'+
+      '<span class="rec-name">'+esc(r.menuName)+(isBest?'<span class="best">ベスト</span>':'')+'</span>'+
+      '<span class="rec-sum">'+s+'<small>周</small></span></button>'+body+'</div>';
+  }).join("");
+  return head + chips + '<div class="card" style="margin-top:16px">'+chart+'</div><div class="recs">'+rows+'</div></div>';
+}
+
+function sw(key, label, sub){
+  var on = !!store.settings[key];
+  return '<div class="set-row"><div><div class="lbl">'+label+'</div>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div>'+
+    '<button class="switch" data-a="toggle" data-k="'+key+'" aria-pressed="'+on+'">'+(on?"オン":"オフ")+'</button></div>';
+}
+function settingsView(){
+  var s = store.settings;
+  var prepChips = [0,3,5,10].map(function(v){ return '<button class="chip" data-a="prep" data-v="'+v+'" aria-pressed="'+(s.prep===v)+'">'+(v?v+"秒":"なし")+'</button>'; }).join("");
+  var ja = voices.filter(function(v){ return /^ja/i.test(v.lang||""); }).length;
+  return '<div class="wrap"><header class="top"><button class="back" data-a="go" data-v="home">戻る</button><h1>設定</h1><span></span></header>'+
+    '<h2>応援ボイス</h2><div class="card">'+
+      '<div class="set-row"><div><div class="lbl">優しいお姉さん</div><div class="sub">高めの声で励まします</div></div><div class="row" style="margin:0">'+
+        '<button class="ghost" data-a="test" data-w="sister">試しに聞く</button>'+
+        '<button class="switch" data-a="toggle" data-k="sister" aria-pressed="'+!!s.sister+'">'+(s.sister?"オン":"オフ")+'</button></div></div>'+
+      '<div class="set-row"><div><div class="lbl">スパルタ鬼コーチ</div><div class="sub">低めの声で追い込みます</div></div><div class="row" style="margin:0">'+
+        '<button class="ghost" data-a="test" data-w="coach">試しに聞く</button>'+
+        '<button class="switch" data-a="toggle" data-k="coach" aria-pressed="'+!!s.coach+'">'+(s.coach?"オン":"オフ")+'</button></div></div>'+
+      sw("cheer","運動中の応援","約8秒ごとに、オンのキャラクターからランダムで流れます")+
+      sw("countVoice","カウントダウンの声","残り10秒と、最後の5秒を読み上げます")+
+      sw("beep","効果音","切り替えやカウントのピッという音")+
+    '</div>'+
+    '<h2>準備時間</h2><div class="card"><div class="chips">'+prepChips+'</div><p class="muted" style="margin:12px 0 0">スタートを押してから、1セット目が始まるまでの時間です。</p></div>'+
+    (window.claude ? '' : '<h2>記録の引っ越し・バックアップ</h2><div class="card">'+
+      '<p class="muted" style="margin-top:0">記録とメニューはこのiPadの中に保存されます。別のiPadに移すときや、念のため保存しておきたいときは、ファイルに書き出してください。読み込むと、今ある記録に追加されます（同じ記録は重複しません）。</p>'+
+      '<div class="row"><button class="primary" data-a="export">記録を書き出す</button>'+
+      '<label class="ghost filebtn">記録を読み込む<input type="file" accept=".json,application/json" data-file="import"></label></div></div>')+
+    '<h2>うまく動かないとき</h2><div class="card"><ul class="tips">'+
+      '<li>音が出ないときは、iPadの音量と消音モードを確認してください。</li>'+
+      '<li>途中で画面が消えるときは、iPadの「設定」→「画面表示と明るさ」→「自動ロック」を「なし」にしてください。</li>'+
+      '<li>声の種類はiPadに入っている日本語音声によって変わります。'+(ja?'':'（現在、日本語音声が見つかっていません）')+'</li>'+
+      '<li>記録は'+(remote.ref?'このiPadと、あなたのClaudeアカウントの両方':'このiPad')+'に保存されます。</li>'+
+    '</ul></div></div>';
+}
+
+function resultView(){
+  var d = resultDraft, total = sum(d.counts), pb = pastBests(d), tg = d.targets || [];
+  var head;
+  if(pb.total==null) head = '<div class="diff">このメニューの初めての記録です（秒数を変えた場合も初回扱い）</div>';
+  else {
+    var dt = total - pb.total;
+    head = '<div class="diff'+(dt>0?" up":"")+'">過去最高 '+pb.total+'周　'+
+      (dt>0 ? '→ +'+dt+'周　最高記録を更新！' : dt===0 ? '→ 最高記録とタイ！' : '→ あと'+(-dt)+'周で最高記録')+'</div>';
+  }
+  var chips = [];
+  var prev = lastRecord(d.menuId, d.date);
+  if(prev){ var df = total - sum(prev.counts); chips.push('前回（'+fmtDate(prev.date)+'）より '+(df>0?"+":"")+df+'周'); }
+  var tn = tg.filter(function(t){return t!=null;}).length;
+  if(tn){ var ok = d.counts.filter(function(c,i){return goalOk(c, tg[i]);}).length; chips.push('目標達成 '+ok+' / '+tn+' セット'); }
+  var ups = d.counts.filter(function(c,i){return pb.per[i]!=null && c>pb.per[i];}).length;
+  if(pb.total!=null) chips.push('セット最高記録の更新 '+ups+' セット');
+  var rows = d.counts.map(function(c,i){
+    var best = pb.per[i], t = tg[i], badge;
+    if(best==null) badge = '<span class="badge">初記録</span>';
+    else if(c>best) badge = '<span class="badge up">更新 +'+(c-best)+'</span>';
+    else if(c===best) badge = '<span class="badge tie">タイ</span>';
+    else badge = '<span class="badge down">最高まで −'+(best-c)+'</span>';
+    return '<div class="set-edit"><span class="sn">セット'+(i+1)+'</span>'+
+      '<button data-a="rdec" data-i="'+i+'" aria-label="セット'+(i+1)+'を1減らす">−</button>'+
+      '<span class="n">'+(c||0)+'</span>'+
+      '<button data-a="rinc" data-i="'+i+'" aria-label="セット'+(i+1)+'を1増やす">＋</button>'+
+      '<span class="cmp"><span>最高 '+(best==null?"−":best)+'</span>'+
+      (t!=null ? '<span class="tg'+(goalOk(c,t)?" ok":"")+'">目標 '+t+(goalOk(c,t)?" ✓":"")+'</span>' : '')+badge+'</span></div>';
+  }).join("");
+  return '<div class="wrap"><header class="top"><h1>おつかれさま！</h1><span class="muted">'+esc(d.menuName)+'　'+fmtDate(d.date)+'</span></header>'+
+    '<div class="score"><div class="big">'+total+'<small>周</small></div><div class="avg">1セット平均 '+avg(d.counts)+'周</div></div>'+head+
+    (chips.length ? '<div class="summary">'+chips.map(function(c){return '<span>'+c+'</span>';}).join("")+'</div>' : '')+
+    '<div class="card"><h2 style="margin-top:0">セットごとの周回数</h2><p class="muted" style="margin-top:0">過去最高・目標と比べています。まちがいがあれば＋／−で直せます。</p>'+
+    '<div class="set-head"><span>セット・今回</span><span></span><span>過去最高と目標</span></div>'+rows+
+    '<div class="field" style="margin-top:20px"><label for="memo">ひとことメモ</label><textarea id="memo" class="text" data-in="memo" placeholder="例：最後のセットで足が止まった">'+esc(d.memo)+'</textarea></div>'+
+    '<div class="row"><button class="primary" data-a="saveRec">記録を保存</button>'+
+    '<button class="danger'+(armed==="discard"?" armed":"")+'" data-a="discardRec">'+(armed==="discard"?"もう一度押すと保存せずに戻る":"保存せずに戻る")+'</button></div></div></div>';
+}
+
+function counterHTML(k, title){
+  var n = run.counts[k]==null ? 0 : run.counts[k];
+  return '<section class="counter">'+
+    '<div class="ctitle">'+title+'</div>'+
+    '<div class="cnum" id="cnum">'+n+'<small>周</small></div>'+
+    '<div class="cgoal'+(goalOk(n, run.targets[k])?' ok':'')+'" id="cgoal">'+goalStatus(n, run.targets[k])+'</div>'+
+    '<button class="plus" data-a="inc">＋1周</button>'+
+    '<button class="minus" data-a="dec">−1</button>'+
+    (k>0 ? '<div class="chint">前のセットと同じ数から始まっています</div>' : '')+
+  '</section>';
+}
+function renderTimer(){
+  if(!run || view!=="timer") return;
+  var p = phase(); if(!p) return;
+  var label = {prep:"準備", work:"運動", rest:"休憩"}[p.type];
+  var setNo = p.type==="rest" ? p.set+2 : p.set+1;
+  var setTxt = p.type==="prep" ? '全'+run.menu.sets+'セット' : (p.type==="rest" ? '次は <b>'+setNo+'</b>/'+run.menu.sets : 'セット <b>'+setNo+'</b>/'+run.menu.sets);
+  var rem = Math.ceil(Math.max(0, (run.paused ? run.remainMs : run.phaseEnd - Date.now()))/1000);
+  var hasCounter = p.type==="rest";
+  var tg = run.targets[p.type==="rest" ? p.set+1 : p.set];
+  var goalLine = tg!=null ? '<div class="goal">'+(p.type==="rest"?"次の目標":"目標")+'<b>'+tg+'</b>周</div>' : '';
+  var veil = '';
+  if(run.modal){
+    veil = '<div class="veil"><div class="dialog"><h3>トレーニングを終わりますか？</h3>'+
+      '<button class="primary" data-a="mContinue">続ける</button>'+
+      '<button data-a="mSave">ここまでを記録する</button>'+
+      '<button data-a="mDiscard">記録せずに終わる</button></div></div>';
+  } else if(run.paused){
+    veil = '<div class="veil"><button class="big-resume" data-a="pause">再開する</button></div>';
+  }
+  app.innerHTML = '<div class="timer '+p.type+(hasCounter?" has-counter":"")+'">'+
+    '<header class="tbar"><div class="tname">'+esc(run.menu.name)+'</div><div class="tset">'+setTxt+'</div>'+
+    '<button class="tbtn" data-a="pause">一時停止</button><button class="tbtn" data-a="stop">終了</button></header>'+
+    '<div class="tmain"><section class="clock"><div class="plabel">'+label+'</div>'+goalLine+
+    '<div class="secs" id="secs">'+fmtSecs(rem)+'</div><div class="pbar"><i id="pfill"></i></div>'+
+    '<div class="caption" id="caption" aria-live="polite"></div></section>'+
+    (hasCounter ? counterHTML(p.set, 'セット'+(p.set+1)+'の周回数') : '')+
+    '</div>'+veil+'</div>';
+}
+function renderFinal(){
+  var k = run.menu.sets-1;
+  app.innerHTML = '<div class="timer final has-counter">'+
+    '<header class="tbar"><div class="tname">'+esc(run.menu.name)+'</div><div class="tset">終了</div></header>'+
+    '<div class="tmain"><section class="clock"><div class="plabel">おつかれさま！</div>'+
+    '<div class="secs" style="font-size:min(20vh,22vw)">'+sum(run.counts)+'<span style="font-size:.3em;font-family:var(--font)">周</span></div>'+
+    '<div class="caption">最後のセットの周回数を入れたら、<br>「結果を見る」を押してね</div></section>'+
+    '<div style="display:flex;flex-direction:column;gap:14px;min-height:0">'+counterHTML(k, 'セット'+(k+1)+'の周回数')+
+    '<button class="go-result" data-a="toResult">結果を見る</button></div></div></div>';
+}
+function updateCounter(delta){
+  if(!run) return;
+  var k = view==="final" ? run.menu.sets-1 : (phase() && phase().type==="rest" ? phase().set : -1);
+  if(k<0) return;
+  run.counts[k] = Math.max(0, Math.min(99, (run.counts[k]||0) + delta));
+  if(view==="final"){ renderFinal(); return; }
+  var el = document.getElementById("cnum"); if(el) el.innerHTML = run.counts[k]+'<small>周</small>';
+  var g = document.getElementById("cgoal");
+  if(g){ g.textContent = goalStatus(run.counts[k], run.targets[k]); g.className = "cgoal" + (goalOk(run.counts[k], run.targets[k]) ? " ok" : ""); }
+  if(delta>0) beep(1040,0.05,0.15);
+}
+
+/* ---------- events ---------- */
+app.addEventListener("input", function(e){
+  var k = e.target.getAttribute("data-in");
+  if(k==="name" && editDraft) editDraft.name = e.target.value;
+  if(k==="memo" && resultDraft) resultDraft.memo = e.target.value;
+});
+app.addEventListener("change", function(e){
+  if(e.target.getAttribute("data-file")!=="import") return;
+  var file = e.target.files && e.target.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(){
+    try{
+      var data = JSON.parse(reader.result);
+      if(!data || !Array.isArray(data.records) || !Array.isArray(data.menus)) throw new Error("format");
+      var before = store.records.length;
+      store = merge(store, data); persist(); render();
+      toast("読み込みました（記録 +" + (store.records.length - before) + "件）");
+    }catch(err){ toast("このファイルは読み込めません。書き出したバックアップファイルを選んでください"); }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+});
+app.addEventListener("click", function(e){
+  var b = e.target.closest("[data-a]"); if(!b) return;
+  var a = b.getAttribute("data-a"), id = b.getAttribute("data-id");
+  if(a!=="delMenu" && a!=="delRec" && a!=="discardRec") armed = null;
+  switch(a){
+    case "go": view = b.getAttribute("data-v"); render(); break;
+    case "start": startRun(id); break;
+    case "edit": { var m = menuById(id); editDraft = Object.assign({}, m); view="edit"; render(); break; }
+    case "new": editDraft = {id:null, name:"", work:30, rest:30, sets:8}; view="edit"; render(); break;
+    case "step": {
+      var f = b.getAttribute("data-f"), d = parseInt(b.getAttribute("data-d"),10);
+      var lim = f==="sets" ? [1,30] : [5,300];
+      editDraft[f] = Math.max(lim[0], Math.min(lim[1], editDraft[f] + d));
+      render(); break;
+    }
+    case "saveMenu": {
+      var dft = editDraft, name = (dft.name||"").trim() || (dft.work+"秒×"+dft.sets+"セット");
+      var rec = {id:dft.id || ("m-"+uid()), name:name, work:dft.work, rest:dft.rest, sets:dft.sets, updatedAt:Date.now()};
+      var i = store.menus.findIndex(function(m){return m.id===rec.id;});
+      if(i>=0) store.menus[i] = rec; else store.menus.push(rec);
+      persist(); view="home"; render(); toast("メニューを保存しました"); break;
+    }
+    case "delMenu":
+      if(armed!=="menu"){ armed="menu"; render(); break; }
+      armed=null;
+      store.menus = store.menus.filter(function(m){return m.id!==editDraft.id;});
+      store.deleted.push(editDraft.id);
+      persist(); view="home"; render(); toast("メニューを削除しました（記録は残ります）"); break;
+    case "pause":
+      if(!run) break;
+      if(run.paused){ resumeRun(); } else { pauseRun(); }
+      renderTimer(); break;
+    case "stop": if(!run) break; pauseRun(); run.modal = true; renderTimer(); break;
+    case "mContinue": run.modal=false; resumeRun(); renderTimer(); break;
+    case "mSave": {
+      var r = endRun(); var counts = r.counts.filter(function(c){return c!=null;});
+      if(!counts.length){ view="home"; render(); toast("記録する周回数がありませんでした"); break; }
+      toResult(r, counts); break;
+    }
+    case "mDiscard": endRun(); view="home"; render(); break;
+    case "inc": updateCounter(1); break;
+    case "dec": updateCounter(-1); break;
+    case "toResult": { var r2 = endRun(); toResult(r2, r2.counts.map(function(c){return c||0;})); break; }
+    case "rinc": case "rdec": {
+      var ix = parseInt(b.getAttribute("data-i"),10);
+      resultDraft.counts[ix] = Math.max(0, Math.min(99, (resultDraft.counts[ix]||0) + (a==="rinc"?1:-1)));
+      render(); break;
+    }
+    case "saveRec": {
+      var d2 = resultDraft;
+      store.records.push({id:"r-"+uid(), menuId:d2.menuId, menuName:d2.menuName, work:d2.work, rest:d2.rest,
+        counts:d2.counts.slice(), targets:(d2.targets||[]).slice(), memo:(d2.memo||"").trim(), date:d2.date});
+      persist(); resultDraft=null; histFilter=d2.menuId; view="history"; render(); toast("記録を保存しました"); break;
+    }
+    case "discardRec":
+      if(armed!=="discard"){ armed="discard"; render(); break; }
+      armed=null; resultDraft=null; view="home"; render(); break;
+    case "filter": histFilter = b.getAttribute("data-m"); render(); break;
+    case "toggleRec": openRec[id] = !openRec[id]; render(); break;
+    case "delRec":
+      if(armed!==id){ armed=id; render(); break; }
+      armed=null;
+      store.records = store.records.filter(function(r){return r.id!==id;});
+      store.deleted.push(id); persist(); render(); toast("記録を削除しました"); break;
+    case "toggle": {
+      var key = b.getAttribute("data-k");
+      store.settings[key] = !store.settings[key];
+      if((key==="sister"||key==="coach") && !store.settings.sister && !store.settings.coach){
+        store.settings[key] = true; toast("どちらか1人はオンにしてください");
+      }
+      persist(); render(); break;
+    }
+    case "prep": store.settings.prep = parseInt(b.getAttribute("data-v"),10); persist(); render(); break;
+    case "export": {
+      try{
+        var blob = new Blob([JSON.stringify(store, null, 1)], {type:"application/json"});
+        var dd = new Date(), stamp = dd.getFullYear()+String(dd.getMonth()+1).padStart(2,"0")+String(dd.getDate()).padStart(2,"0");
+        var link = document.createElement("a");
+        link.href = URL.createObjectURL(blob); link.download = "interval-backup-"+stamp+".json";
+        document.body.appendChild(link); link.click();
+        setTimeout(function(){ URL.revokeObjectURL(link.href); link.remove(); }, 1000);
+        toast("ファイルを書き出しました");
+      }catch(err){ toast("書き出しに失敗しました"); }
+      break;
+    }
+    case "test": {
+      unlockAudio(); var w = b.getAttribute("data-w");
+      speak(pick(CHEERS[w]), w, true); break;
+    }
+  }
+});
+
+render();
+initRemote();
+if("serviceWorker" in navigator && /^https?:$/.test(location.protocol) && !window.claude){
+  window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
+}
+})();
+</script>
+</body>
+</html>
